@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     browserbase_api_key: str = ""
     browserbase_project_id: str = ""
     perplexity_api_key: str = ""
+    openai_api_key: str = ""  # OpenAI GPT-4o for negotiation agent
 
     # Optional
     elastic_cloud_id: str = ""
