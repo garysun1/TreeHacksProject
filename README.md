@@ -1,0 +1,1 @@
+Multi-agent AI shopping assistant that helps users go from vague shopping intent to the best possible purchase. Built for **TreeHacks 2026**.
