@@ -308,6 +308,135 @@ class PerplexityClient:
             return _mock_trust_analysis(seller, platform)
 
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(min=1, max=10),
+        retry=retry_if_not_exception_type(PermissionError),
+    )
+    async def analyze_price(
+        self,
+        product_name: str,
+        brand: str,
+        current_price: float,
+        platform: str,
+        category: str = "",
+    ) -> dict[str, Any]:
+        """All-in-one price intelligence for a product candidate.
+
+        Single Sonar call covering competitor prices, price history,
+        coupons, cashback, and price prediction.
+
+        Returns:
+            Dict with keys: competitor_prices, price_history, coupons,
+            cashback, price_prediction, sources.
+        """
+        label = f"{product_name[:50]} ${current_price}"
+        logger.info("Perplexity: price analysis for '%s'", label)
+
+        if not self._use_api():
+            return _mock_price_analysis(product_name, current_price, platform)
+
+        now_month = __import__("datetime").datetime.now().strftime("%B %Y")
+        prompt = (
+            f"Provide a comprehensive price analysis for this product:\n\n"
+            f"Product: {product_name}\n"
+            f"Brand: {brand}\n"
+            f"Current price: ${current_price:.2f} on {platform}\n"
+            f"Category: {category or 'electronics'}\n\n"
+            f"Research ALL of the following:\n"
+            f"1. COMPETITOR PRICES: What does this exact product (or nearest match) "
+            f"cost on Amazon, Walmart, Best Buy, eBay, B&H Photo? "
+            f"Include price and whether it's in stock.\n"
+            f"2. PRICE HISTORY: What is the historical low, high, and average price? "
+            f"Check CamelCamelCamel, Keepa, or Google Shopping trends. "
+            f"Is the price currently rising, falling, or stable?\n"
+            f"3. COUPONS: Are there any active coupon codes or promo deals for "
+            f"{platform} in {now_month}? Check RetailMeNot, Honey, Slickdeals.\n"
+            f"4. CASHBACK: What cashback is available for {platform} via "
+            f"Rakuten, TopCashback, or other portals?\n"
+            f"5. PREDICTION: Based on seasonal patterns, is this a good time to buy "
+            f"or should the buyer wait?\n\n"
+            f"Reply ONLY with a JSON object:\n"
+            f'{{\n'
+            f'  "competitor_prices": [{{"platform": "...", "price": 0.00, "url": "...", "in_stock": true}}],\n'
+            f'  "price_history": {{"lowest_price": 0.00, "highest_price": 0.00, '
+            f'"average_price": 0.00, "lowest_price_date": "YYYY-MM-DD or null", '
+            f'"price_trend": "rising|falling|stable|volatile"}},\n'
+            f'  "coupons": [{{"code": "...", "description": "...", "discount_percent": 0.0, '
+            f'"discount_amount": null, "source": "..."}}],\n'
+            f'  "cashback": [{{"provider": "...", "cashback_percent": 0.0, "url": "..."}}],\n'
+            f'  "price_prediction": "short sentence"\n'
+            f'}}'
+        )
+
+        try:
+            messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a price intelligence analyst for online shopping. "
+                        "Provide real, current data with actual prices and URLs. "
+                        "If you don't know a specific value, use null. "
+                        "Always respond with valid JSON only."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ]
+            data = await self._call_sonar(messages)
+            answer, sources = self._extract(data)
+
+            clean = answer.strip()
+            if clean.startswith("```"):
+                clean = clean.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            parsed = json.loads(clean)
+
+            return {
+                "competitor_prices": parsed.get("competitor_prices", []),
+                "price_history": parsed.get("price_history", {}),
+                "coupons": parsed.get("coupons", []),
+                "cashback": parsed.get("cashback", []),
+                "price_prediction": parsed.get("price_prediction", ""),
+                "sources": sources,
+            }
+        except Exception as e:
+            logger.warning("Perplexity: price analysis failed for '%s', using mock: %s", label, e)
+            return _mock_price_analysis(product_name, current_price, platform)
+
+
+def _mock_price_analysis(
+    product_name: str, current_price: float, platform: str
+) -> dict[str, Any]:
+    """Return plausible mock price analysis."""
+    import random
+
+    lowest = round(current_price * random.uniform(0.70, 0.95), 2)
+    highest = round(current_price * random.uniform(1.05, 1.40), 2)
+    average = round((lowest + highest + current_price) / 3, 2)
+    return {
+        "competitor_prices": [
+            {
+                "platform": p,
+                "price": round(current_price * random.uniform(0.90, 1.15), 2),
+                "url": f"https://{p}.com/search?q={product_name.replace(' ', '+')}",
+                "in_stock": random.choice([True, True, False]),
+            }
+            for p in ["amazon", "walmart", "bestbuy"]
+            if p != platform
+        ],
+        "price_history": {
+            "lowest_price": lowest,
+            "highest_price": highest,
+            "average_price": average,
+            "lowest_price_date": "2025-11-29",
+            "price_trend": random.choice(["stable", "falling", "rising"]),
+        },
+        "coupons": [],
+        "cashback": [],
+        "price_prediction": "Mock: Prices likely stable for the next 2 weeks.",
+        "sources": ["https://example.com/mock-price"],
+    }
+
+
 def _clamp(val: Any, lo: float = 0, hi: float = 100) -> float:
     """Clamp a numeric value to [lo, hi]."""
     try:
