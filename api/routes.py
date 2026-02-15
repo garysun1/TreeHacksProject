@@ -1,11 +1,13 @@
 """FastAPI REST endpoints for the ShopAgent API."""
 
 import logging
+import re
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from models.requirements import ProductRequirements
 from orchestrator.pipeline import pipeline
 
 logger = logging.getLogger(__name__)
@@ -89,17 +91,63 @@ async def send_message(session_id: str, req: SendMessageRequest) -> dict[str, An
     }
 
 
+def _auto_requirements(query: str) -> ProductRequirements:
+    """Generate basic ProductRequirements from a raw user query.
+
+    Used as a fallback when the intent agent hasn't finalized requirements
+    (e.g. the frontend skipped the multi-turn conversation).
+    """
+    q = query.lower()
+
+    # Try to extract a budget
+    budget_max = None
+    price_match = re.search(r"\$\s?(\d[\d,]*)", query)
+    if price_match:
+        budget_max = float(price_match.group(1).replace(",", ""))
+    elif re.search(r"under\s+(\d[\d,]*)", q):
+        m = re.search(r"under\s+(\d[\d,]*)", q)
+        if m:
+            budget_max = float(m.group(1).replace(",", ""))
+
+    # Use the full query as description; the search agent will
+    # build proper search queries from it.
+    return ProductRequirements(
+        category=query,
+        description=query,
+        must_have=[],
+        nice_to_have=[],
+        dealbreakers=[],
+        budget_min=None,
+        budget_max=budget_max,
+        brand_preferences=[],
+        brand_exclusions=[],
+        use_case=query,
+        urgency="no_rush",
+        condition="any",
+    )
+
+
 @router.post("/sessions/{session_id}/search")
 async def trigger_search(session_id: str) -> dict[str, Any]:
-    """Trigger the full search pipeline (after intent is finalized).
+    """Trigger the full search pipeline.
 
-    Runs search -> analyze -> rank -> negotiate (if enabled).
+    If requirements haven't been finalized by the intent agent, auto-generates
+    basic requirements from the original user query so the pipeline can proceed.
     """
     state = pipeline.get_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="Session not found")
+
+    # Auto-generate requirements if intent agent hasn't finalized them
     if not state.requirements:
-        raise HTTPException(status_code=400, detail="Requirements not yet finalized")
+        logger.info(
+            "Session %s: requirements not finalized, auto-generating from query: %s",
+            session_id,
+            state.user_query[:80],
+        )
+        state.requirements = _auto_requirements(state.user_query)
+        state.requirements_finalized = True
+        pipeline.sessions[session_id] = state
 
     updated = await pipeline.run_full_pipeline(session_id)
     return {

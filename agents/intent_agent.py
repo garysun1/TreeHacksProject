@@ -69,6 +69,17 @@ class IntentAgent(BaseAgent):
 
         Returns state update with conversation_history and optionally requirements.
         """
+        # Short-circuit: if requirements are already finalized (e.g. auto-generated
+        # by the /search endpoint), skip the conversation and proceed.
+        if state.requirements_finalized and state.requirements is not None:
+            logger.info("Intent agent: requirements already finalized, passing through")
+            return {
+                "requirements": state.requirements,
+                "requirements_finalized": True,
+                "status": "searching",
+                "updated_at": datetime.now(timezone.utc),
+            }
+
         messages = []
         for turn in state.conversation_history:
             messages.append(turn)
