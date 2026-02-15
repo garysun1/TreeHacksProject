@@ -329,7 +329,7 @@ export default function Home() {
           <div className="bg-gray-50 border-b border-gray-100">
             <div className="max-w-[1400px] mx-auto px-4 py-1.5">
               <p className="text-[11px] text-gray-400 text-center">
-                Searching 4 platforms &middot; Verifying sellers &middot; Finding savings
+                Searching 6 platforms &middot; Verifying sellers &middot; Finding savings
               </p>
             </div>
           </div>

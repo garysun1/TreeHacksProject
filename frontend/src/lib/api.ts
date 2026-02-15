@@ -18,6 +18,20 @@ interface AgentUpdate {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// Backend platform slug → display name (used in product cards, filters, badges)
+const PLATFORM_DISPLAY: Record<string, string> = {
+  amazon: "Amazon",
+  ebay: "eBay",
+  walmart: "Walmart",
+  bestbuy: "Best Buy",
+  facebook_marketplace: "Facebook Marketplace",
+  craigslist: "Craigslist",
+};
+
+function platformDisplayName(slug: string): string {
+  return PLATFORM_DISPLAY[(slug ?? "").toLowerCase()] ?? (slug ?? "").charAt(0).toUpperCase() + (slug ?? "").slice(1);
+}
+
 // ── Data transformation: backend → frontend ──────────────────────────
 
 /**
@@ -40,7 +54,7 @@ function transformRankedCandidate(
     image: c.image_urls?.[0] ?? `https://picsum.photos/300/300?random=${c.id}`,
     rating: c.rating ?? 0,
     reviewCount: c.review_count ?? 0,
-    platform: (c.platform ?? "").charAt(0).toUpperCase() + (c.platform ?? "").slice(1),
+    platform: platformDisplayName(c.platform),
     url: c.url ?? "#",
     specs: c.specifications ?? {},
     features: [
@@ -78,7 +92,7 @@ function transformRankedCandidate(
         price: price.price_history.average_price ?? c.price ?? 0,
       }] : [],
       competitorPrices: (price.competitor_prices ?? []).map((cp: any) => ({
-        platform: cp.platform ?? "",
+        platform: typeof cp.platform === "string" ? platformDisplayName(cp.platform) : (cp.platform ?? ""),
         price: cp.price ?? 0,
         inStock: cp.in_stock ?? true,
         url: cp.url ?? "#",
@@ -309,7 +323,7 @@ export function simulatePipeline(
 
   const delays = [
     { index: 0, delay: 500, activeText: "Understanding your query...", completeText: `Query parsed: "${short}"` },
-    { index: 1, delay: 2000, activeText: "Searching 4 platforms...", completeText: `Found ${mockProducts.length} demo results` },
+    { index: 1, delay: 2000, activeText: "Searching 6 platforms...", completeText: `Found ${mockProducts.length} demo results` },
     { index: 2, delay: 3500, activeText: "Verifying sellers...", completeText: "Trust analysis complete" },
     { index: 3, delay: 5000, activeText: "Analyzing prices & deals...", completeText: "Price analysis complete" },
     { index: 4, delay: 6500, activeText: "Generating strategies...", completeText: "Negotiation analysis complete" },

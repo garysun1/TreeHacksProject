@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """\
 You are a product search specialist. Given structured product requirements,
-you search across multiple shopping platforms (Amazon, Walmart, Best Buy) to
-find the best candidate products.
+you search across multiple shopping platforms (Amazon, eBay, Walmart, Best Buy,
+Facebook Marketplace, Craigslist) to find the best candidate products.
 
 For each candidate, extract: name, brand, price, URL, seller info, ratings,
 review snippets, specifications, availability, and shipping info.
@@ -26,7 +26,7 @@ Match candidates against the user's requirements and note which must-have
 features each product fulfills or misses.
 """
 
-PLATFORMS = ["amazon", "walmart", "bestbuy"]
+PLATFORMS = ["amazon", "ebay", "walmart", "bestbuy", "facebook_marketplace", "craigslist"]
 
 # Max candidates to return (top by relevance score)
 TOP_N = 20

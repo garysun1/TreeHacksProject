@@ -83,6 +83,22 @@ function PlatformLogos() {
           Best Buy
         </span>
       </div>
+
+      {/* Facebook Marketplace */}
+      <span
+        className="text-[14px] font-bold text-[#1877F2] tracking-tight opacity-50 hover:opacity-80 transition-opacity cursor-default select-none"
+        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+      >
+        Marketplace
+      </span>
+
+      {/* Craigslist */}
+      <span
+        className="text-[14px] font-bold text-[#5C249C] tracking-tight opacity-50 hover:opacity-80 transition-opacity cursor-default select-none"
+        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+      >
+        craigslist
+      </span>
     </div>
   );
 }
@@ -423,6 +439,8 @@ const platformColors: Record<string, string> = {
   eBay: "bg-blue-100 text-blue-800",
   Walmart: "bg-blue-100 text-blue-700",
   "Best Buy": "bg-yellow-100 text-yellow-800",
+  "Facebook Marketplace": "bg-sky-100 text-sky-800",
+  Craigslist: "bg-violet-100 text-violet-800",
 };
 
 // ── Deal card (matches ProductCard style) ────────────────────────────

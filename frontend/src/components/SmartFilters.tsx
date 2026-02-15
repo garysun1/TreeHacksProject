@@ -9,7 +9,7 @@ interface SmartFiltersProps {
 }
 
 export function SmartFilters({ filters, onFiltersChange }: SmartFiltersProps) {
-  const allPlatforms = ["Amazon", "eBay", "Walmart", "Best Buy"];
+  const allPlatforms = ["Amazon", "eBay", "Walmart", "Best Buy", "Facebook Marketplace", "Craigslist"];
   const conditions: Array<Filters["condition"]> = ["Any", "New", "Refurbished", "Used"];
   const sortOptions = [
     { value: "relevance", label: "Relevance" },

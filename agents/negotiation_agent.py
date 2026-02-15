@@ -35,7 +35,7 @@ instead of fabricating a strategy.
 """
 
 # Platform capabilities
-NEGOTIABLE_PLATFORMS = {"ebay", "facebook", "craigslist", "offerup", "mercari"}
+NEGOTIABLE_PLATFORMS = {"ebay", "facebook", "facebook_marketplace", "craigslist", "offerup", "mercari"}
 PRICE_MATCH_PLATFORMS = {"bestbuy", "walmart", "target"}
 FIXED_PRICE_PLATFORMS = {"amazon"}
 

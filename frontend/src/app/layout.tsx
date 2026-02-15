@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "ShopAgent — Search smarter. Shop better.",
-  description: "Search across Amazon, eBay, Walmart, Best Buy and more. AI-verified deals, trust scores, and negotiation strategies.",
+  description: "Search across Amazon, eBay, Walmart, Best Buy, Facebook Marketplace, Craigslist and more. AI-verified deals, trust scores, and negotiation strategies.",
 };
 
 export default function RootLayout({

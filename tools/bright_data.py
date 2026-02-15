@@ -9,6 +9,7 @@ dataset IDs (from https://github.com/luminati-io/Amazon-scraper):
 """
 
 import logging
+from urllib.parse import quote
 from typing import Any
 
 import httpx
@@ -23,8 +24,51 @@ BASE_URL = "https://api.brightdata.com"
 # Domain URLs for each supported platform
 PLATFORM_DOMAINS: dict[str, str] = {
     "amazon": "https://www.amazon.com",
+    "ebay": "https://www.ebay.com",
     "walmart": "https://www.walmart.com",
     "bestbuy": "https://www.bestbuy.com",
+    "facebook_marketplace": "https://www.facebook.com/marketplace",
+    "craigslist": "https://www.craigslist.org",
+}
+
+# Simple shopping-bag icon as SVG data URL (neutral gray, fits product placeholder)
+_MOCK_ICON_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" '
+    'stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'
+    '<path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>'
+    '<line x1="3" y1="6" x2="21" y2="6"/>'
+    '<path d="M16 10a4 4 0 01-8 0"/>'
+    "</svg>"
+)
+MOCK_PRODUCT_PLACEHOLDER_IMAGE = "data:image/svg+xml," + quote(_MOCK_ICON_SVG, safe="")
+
+
+def _mock_product_title(query: str, brand: str, index: int) -> str:
+    """Generate a plausible product title from the query and brand (no 'Mock' or 'Default')."""
+    # Normalize query: title-case, strip
+    words = query.strip().split()
+    if not words:
+        return f"{brand} Product — Model {index + 1}"
+    title_query = " ".join(w.capitalize() for w in words[:5])  # cap first 5 words
+    return f"{brand} {title_query} — Model {index + 1}"
+
+
+# Mock result URL base and seller label per platform (for platforms where .com/product doesn't apply)
+_MOCK_PLATFORM_URL_BASE: dict[str, str] = {
+    "amazon": "https://www.amazon.com/dp/",
+    "ebay": "https://www.ebay.com/itm/",
+    "walmart": "https://www.walmart.com/ip/",
+    "bestbuy": "https://www.bestbuy.com/site/",
+    "facebook_marketplace": "https://www.facebook.com/marketplace/item/",
+    "craigslist": "https://craigslist.org/",
+}
+_MOCK_PLATFORM_SELLER: dict[str, str] = {
+    "amazon": "Amazon Seller",
+    "ebay": "eBay Seller",
+    "walmart": "Walmart Seller",
+    "bestbuy": "Best Buy Seller",
+    "facebook_marketplace": "Facebook Marketplace Seller",
+    "craigslist": "Craigslist Seller",
 }
 
 
@@ -32,19 +76,22 @@ def _mock_search_results(query: str, platform: str) -> list[dict[str, Any]]:
     """Return mock search results when API is unavailable.
 
     Prices are spread across a wide range (149–899) so results survive
-    typical budget filters.
+    typical budget filters. Titles are generated from query + brand; image
+    uses a single default placeholder.
     """
     _prices = [149.99, 299.99, 449.99, 599.99, 799.99]
     _brands = ["Sony", "Canon", "Nikon", "Samsung", "LG"]
+    url_base = _MOCK_PLATFORM_URL_BASE.get(platform) or f"https://{platform}.com/product/"
+    seller = _MOCK_PLATFORM_SELLER.get(platform) or f"{platform.replace('_', ' ').title()} Seller"
     return [
         {
-            "name": f"Mock {query} Product {i+1}",
+            "name": _mock_product_title(query, _brands[i % len(_brands)], i),
             "price": _prices[i % len(_prices)],
-            "url": f"https://{platform}.com/product/{i+1}",
+            "url": f"{url_base}{i+1}",
             "rating": 4.0 + (i % 10) / 10,
             "review_count": 100 + i * 20,
-            "seller": f"{platform.title()} Seller",
-            "image": f"https://{platform}.com/img/{i+1}.jpg",
+            "seller": seller,
+            "image": MOCK_PRODUCT_PLACEHOLDER_IMAGE,
             "brand": _brands[i % len(_brands)],
             "availability": "in_stock",
         }

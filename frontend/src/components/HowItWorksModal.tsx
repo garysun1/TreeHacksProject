@@ -15,7 +15,7 @@ const STEPS = [
     label: "Find",
     color: "text-blue-600",
     bg: "bg-blue-50",
-    description: "We search Amazon, eBay, Walmart, and Best Buy simultaneously",
+    description: "We search Amazon, eBay, Walmart, Best Buy, Facebook Marketplace, and Craigslist simultaneously",
   },
   {
     icon: ShieldCheck,

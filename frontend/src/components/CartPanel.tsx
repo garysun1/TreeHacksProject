@@ -12,6 +12,8 @@ const platformColors: Record<string, string> = {
   eBay: "bg-blue-100 text-blue-800",
   Walmart: "bg-blue-100 text-blue-700",
   "Best Buy": "bg-yellow-100 text-yellow-800",
+  "Facebook Marketplace": "bg-sky-100 text-sky-800",
+  Craigslist: "bg-violet-100 text-violet-800",
 };
 
 interface CartPanelProps {

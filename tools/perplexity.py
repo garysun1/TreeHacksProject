@@ -420,7 +420,7 @@ def _mock_price_analysis(
                 "url": f"https://{p}.com/search?q={product_name.replace(' ', '+')}",
                 "in_stock": random.choice([True, True, False]),
             }
-            for p in ["amazon", "walmart", "bestbuy"]
+            for p in ["amazon", "ebay", "walmart", "bestbuy", "facebook_marketplace", "craigslist"]
             if p != platform
         ],
         "price_history": {

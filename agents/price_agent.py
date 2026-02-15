@@ -39,6 +39,16 @@ MAX_CONCURRENT = 3
 # Only analyze the top N candidates
 MAX_CANDIDATES_TO_ANALYZE = 10
 
+# URL base per platform for mock competitor links
+_MOCK_COMPETITOR_URL_BASE: dict[str, str] = {
+    "amazon": "https://www.amazon.com/dp/",
+    "ebay": "https://www.ebay.com/itm/",
+    "walmart": "https://www.walmart.com/ip/",
+    "bestbuy": "https://www.bestbuy.com/site/",
+    "facebook_marketplace": "https://www.facebook.com/marketplace/item/",
+    "craigslist": "https://craigslist.org/",
+}
+
 
 def _safe_float(val: Any, default: float = 0.0) -> float:
     """Safely convert to float."""
@@ -188,14 +198,18 @@ def _mock_price_analysis(candidate: ProductCandidate) -> PriceAnalysis:
         lowest_price_date="2025-11-29",
         price_trend=random.choice(["stable", "falling", "rising"]),
     )
+    def _competitor_url(plat: str) -> str:
+        base = _MOCK_COMPETITOR_URL_BASE.get(plat) or f"https://{plat}.com/product/"
+        return f"{base}{candidate.id}"
+
     competitors = [
         CompetitorPrice(
             platform=p,
             price=round(current * random.uniform(0.90, 1.15), 2),
-            url=f"https://{p}.com/product/{candidate.id}",
+            url=_competitor_url(p),
             in_stock=random.choice([True, True, False]),
         )
-        for p in ["amazon", "walmart", "bestbuy"]
+        for p in ["amazon", "ebay", "walmart", "bestbuy", "facebook_marketplace", "craigslist"]
         if p != candidate.platform
     ]
     return PriceAnalysis(

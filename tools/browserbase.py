@@ -39,7 +39,7 @@ class BrowserbaseClient:
         """Perform a search on a shopping platform via browser automation.
 
         Args:
-            platform: Platform name (amazon, walmart, bestbuy).
+            platform: Platform name (amazon, ebay, walmart, bestbuy, facebook_marketplace, craigslist).
             query: Search query.
 
         Returns:
@@ -47,11 +47,16 @@ class BrowserbaseClient:
         """
         # TODO: Replace with real API call
         logger.info("Browserbase: searching '%s' on %s", query, platform)
+        _url_bases = {
+            "facebook_marketplace": "https://www.facebook.com/marketplace/item/",
+            "craigslist": "https://craigslist.org/search/",
+        }
+        url_base = _url_bases.get(platform) or f"https://{platform}.com/search/"
         return [
             {
                 "name": f"Stagehand {query} Result {i+1}",
                 "price": 150.0 + i * 30,
-                "url": f"https://{platform}.com/search/{i+1}",
+                "url": f"{url_base}{i+1}",
                 "platform": platform,
             }
             for i in range(3)
