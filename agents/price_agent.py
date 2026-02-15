@@ -115,11 +115,11 @@ def _build_coupons(raw: list[dict[str, Any]]) -> list[Coupon]:
         out.append(
             Coupon(
                 code=code,
-                description=item.get("description", ""),
+                description=item.get("description") or "",
                 discount_amount=_safe_float(item.get("discount_amount")) or None,
                 discount_percent=_safe_float(item.get("discount_percent")) or None,
                 verified=bool(item.get("verified", False)),
-                source=item.get("source", "Perplexity Sonar"),
+                source=item.get("source") or "Perplexity Sonar",
             )
         )
     return out
