@@ -69,3 +69,16 @@
 .animate-subtle-pulse {
   animation: subtle-pulse 1.5s ease-in-out infinite;
 }
+
+/* Hide scrollbar on horizontal navs */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Typewriter blinking cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.animate-blink {
+  animation: blink 0.8s step-end infinite;
+}

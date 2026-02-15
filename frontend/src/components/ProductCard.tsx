@@ -1,10 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Star, ShieldCheck, ShieldAlert, ShieldX } from "lucide-react";
+import { Star, ShieldCheck, ShieldAlert, ShieldX, ShoppingCart, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Product } from "@/lib/types";
+import { useCart } from "@/lib/cart-context";
 
 const platformColors: Record<string, string> = {
   Amazon: "bg-amber-100 text-amber-800",
@@ -28,6 +30,24 @@ function TrustIcon({ score }: { score: number }) {
 export function ProductCard({ product, onViewDetails }: ProductCardProps) {
   const { trust, price } = product;
   const savingsPercent = Math.round(((price.originalPrice - price.effectivePrice) / price.originalPrice) * 100);
+  const { addToCart, isInCart } = useCart();
+  const inCart = isInCart(product.id);
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    if (showToast) {
+      const t = setTimeout(() => setShowToast(false), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [showToast]);
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!inCart) {
+      addToCart(product);
+      setShowToast(true);
+    }
+  };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col">
@@ -75,19 +95,23 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
         {/* Price */}
         <div className="mt-auto">
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold text-gray-900">${price.effectivePrice}</span>
-            {price.savings > 0 && (
-              <span className="text-sm text-gray-400 line-through">${price.originalPrice}</span>
+            {price.effectivePrice > 0 ? (
+              <span className="text-xl font-bold text-gray-900">${price.effectivePrice.toFixed(2)}</span>
+            ) : (
+              <span className="text-sm font-medium text-gray-400 italic">Price unavailable</span>
+            )}
+            {price.savings > 0 && price.originalPrice > 0 && (
+              <span className="text-sm text-gray-400 line-through">${price.originalPrice.toFixed(2)}</span>
             )}
           </div>
           {price.savings > 0 && (
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs font-medium text-emerald-600">Save ${price.savings} ({savingsPercent}% off)</span>
+              <span className="text-xs font-medium text-emerald-600">Save ${price.savings.toFixed(2)} ({savingsPercent}% off)</span>
             </div>
           )}
-          {price.savings > 0 && (
-            <p className="text-[11px] text-emerald-600/80 mt-0.5">{price.savingsBreakdown}</p>
-          )}
+          {price.savingsBreakdown ? (
+            <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{price.savingsBreakdown}</p>
+          ) : null}
         </div>
 
         {/* Trust + Deal row */}
@@ -117,13 +141,29 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
         </div>
 
         {/* CTA */}
-        <Button
-          size="sm"
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 mt-1"
-          onClick={() => onViewDetails(product)}
-        >
-          View Deal
-        </Button>
+        <div className="flex gap-2 mt-1 relative">
+          <Button
+            size="sm"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9"
+            onClick={() => onViewDetails(product)}
+          >
+            View Deal
+          </Button>
+          <Button
+            size="sm"
+            variant={inCart ? "outline" : "outline"}
+            className={`h-9 px-2.5 ${inCart ? "border-emerald-300 text-emerald-600" : "border-gray-300 text-gray-600 hover:border-emerald-400 hover:text-emerald-600"}`}
+            onClick={handleAddToCart}
+            disabled={inCart}
+          >
+            {inCart ? <Check className="h-4 w-4" /> : <ShoppingCart className="h-4 w-4" />}
+          </Button>
+          {showToast && (
+            <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap shadow-lg z-10">
+              Added to cart
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

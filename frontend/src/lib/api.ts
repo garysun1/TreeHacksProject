@@ -204,12 +204,13 @@ export async function createSession(query: string): Promise<string | null> {
   }
 }
 
-export async function sendMessage(sessionId: string, message: string): Promise<boolean> {
+export async function sendMessage(sessionId: string, message: string, signal?: AbortSignal): Promise<boolean> {
   try {
     const res = await fetch(`${API_URL}/api/sessions/${sessionId}/message`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message }),
+      signal,
     });
     return res.ok;
   } catch {
@@ -217,10 +218,11 @@ export async function sendMessage(sessionId: string, message: string): Promise<b
   }
 }
 
-export async function triggerSearch(sessionId: string): Promise<boolean> {
+export async function triggerSearch(sessionId: string, signal?: AbortSignal): Promise<boolean> {
   try {
     const res = await fetch(`${API_URL}/api/sessions/${sessionId}/search`, {
       method: "POST",
+      signal,
     });
     return res.ok;
   } catch {
@@ -228,9 +230,9 @@ export async function triggerSearch(sessionId: string): Promise<boolean> {
   }
 }
 
-export async function getCandidates(sessionId: string): Promise<Product[]> {
+export async function getCandidates(sessionId: string, signal?: AbortSignal): Promise<Product[]> {
   try {
-    const res = await fetch(`${API_URL}/api/sessions/${sessionId}/candidates`);
+    const res = await fetch(`${API_URL}/api/sessions/${sessionId}/candidates`, { signal });
     if (!res.ok) throw new Error("Failed to get candidates");
     const data = await res.json();
     return (data.ranked_candidates ?? []).map((rc: any) =>   // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -241,13 +243,13 @@ export async function getCandidates(sessionId: string): Promise<Product[]> {
   }
 }
 
-export async function getSessionState(sessionId: string): Promise<{
+export async function getSessionState(sessionId: string, signal?: AbortSignal): Promise<{
   pipeline: PipelineStage[];
   candidates: Product[];
   filters: Filters;
 } | null> {
   try {
-    const res = await fetch(`${API_URL}/api/sessions/${sessionId}`);
+    const res = await fetch(`${API_URL}/api/sessions/${sessionId}`, { signal });
     if (!res.ok) throw new Error("Failed to get session");
     const data = await res.json();
     const { products, pipeline, filters } = transformSessionState(data);

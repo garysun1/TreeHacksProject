@@ -7,9 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
   Shield, Star, Copy, Check, ExternalLink, AlertTriangle, Info, AlertCircle,
-  TrendingDown, Ticket, Percent, CheckCircle2, ShieldCheck
+  TrendingDown, Ticket, Percent, CheckCircle2, ShieldCheck, ShoppingCart
 } from "lucide-react";
 import { Product } from "@/lib/types";
+import { useCart } from "@/lib/cart-context";
 import { LineChart, Line, XAxis, YAxis, Tooltip as ReTooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 interface ProductDetailPanelProps {
@@ -69,8 +70,11 @@ function SeverityIcon({ severity }: { severity: "info" | "warning" | "critical" 
 }
 
 export function ProductDetailPanel({ product, open, onClose }: ProductDetailPanelProps) {
+  const { addToCart, isInCart } = useCart();
+
   if (!product) return null;
 
+  const inCart = isInCart(product.id);
   const { trust, price, negotiation } = product;
   const currentPrice = price.competitorPrices.find((p) => p.platform === product.platform)?.price || price.effectivePrice;
 
@@ -106,6 +110,29 @@ export function ProductDetailPanel({ product, open, onClose }: ProductDetailPane
               <span className="text-xs text-gray-500 ml-1">({product.reviewCount.toLocaleString()})</span>
             </div>
           </div>
+
+          {/* Add to Cart */}
+          <Button
+            className={`w-full h-11 text-sm font-medium ${
+              inCart
+                ? "bg-gray-100 text-emerald-600 hover:bg-gray-100 cursor-default"
+                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+            }`}
+            onClick={() => !inCart && addToCart(product)}
+            disabled={inCart}
+          >
+            {inCart ? (
+              <>
+                <Check className="h-4 w-4 mr-2" />
+                In Cart
+              </>
+            ) : (
+              <>
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Add to Cart &middot; ${price.effectivePrice.toFixed(2)}
+              </>
+            )}
+          </Button>
 
           {/* Specs */}
           <div>
