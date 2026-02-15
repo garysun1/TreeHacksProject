@@ -270,15 +270,19 @@ class SearchAgent(BaseAgent):
         self, item: dict, platform: str, reqs: ProductRequirements
     ) -> ProductCandidate | None:
         """Convert raw item dict to ProductCandidate; None if filtered out (e.g. budget)."""
-        if reqs.budget_max is not None and float(item.get("price", 0)) > reqs.budget_max:
+        raw_price = float(item.get("price", 0))
+        # Skip products with no usable price
+        if raw_price <= 0:
             return None
-        if reqs.budget_min is not None and float(item.get("price", 0)) < reqs.budget_min:
+        if reqs.budget_max is not None and raw_price > reqs.budget_max:
+            return None
+        if reqs.budget_min is not None and raw_price < reqs.budget_min:
             return None
         return ProductCandidate(
             id=str(uuid.uuid4())[:8],
             name=item.get("name", "Unknown"),
             brand=item.get("brand", "Unknown"),
-            price=float(item.get("price", 0)),
+            price=raw_price,
             url=item.get("url", ""),
             platform=platform,
             seller_name=item.get("seller", platform.title()),

@@ -28,11 +28,11 @@ class Coupon(BaseModel):
     """A coupon or promo code."""
 
     code: str
-    description: str
+    description: str = ""
     discount_amount: Optional[float] = None
     discount_percent: Optional[float] = None
     verified: bool = False
-    source: str
+    source: str = ""
 
 
 class CashbackOption(BaseModel):

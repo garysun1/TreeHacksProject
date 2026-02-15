@@ -34,10 +34,10 @@ after all available savings.
 """
 
 # Limit concurrent Sonar calls
-MAX_CONCURRENT = 5
+MAX_CONCURRENT = 3
 
 # Only analyze the top N candidates
-MAX_CANDIDATES_TO_ANALYZE = 15
+MAX_CANDIDATES_TO_ANALYZE = 10
 
 
 def _safe_float(val: Any, default: float = 0.0) -> float:
@@ -230,13 +230,15 @@ class PriceAgent(BaseAgent):
 
         sem = asyncio.Semaphore(MAX_CONCURRENT)
 
-        async def analyze_one(c: ProductCandidate) -> tuple[str, PriceAnalysis]:
+        async def analyze_one(c: ProductCandidate, idx: int) -> tuple[str, PriceAnalysis]:
+            # Stagger requests to avoid Perplexity 429s (trust agent runs in parallel)
+            await asyncio.sleep(idx * 0.3)
             async with sem:
                 return await self._analyze_candidate(c, state)
 
         try:
             results = await asyncio.gather(
-                *[analyze_one(c) for c in candidates],
+                *[analyze_one(c, i) for i, c in enumerate(candidates)],
                 return_exceptions=True,
             )
         except Exception as e:

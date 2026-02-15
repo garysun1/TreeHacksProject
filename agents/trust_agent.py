@@ -27,10 +27,10 @@ Flag any concerns with appropriate severity (info, warning, critical).
 """
 
 # Limit concurrent Sonar calls to avoid rate-limits
-MAX_CONCURRENT = 5
+MAX_CONCURRENT = 3
 
 # Only analyze the top N candidates (sorted by state order = relevance)
-MAX_CANDIDATES_TO_ANALYZE = 15
+MAX_CANDIDATES_TO_ANALYZE = 10
 
 
 def _flags_from_scores(
@@ -156,13 +156,15 @@ class TrustAgent(BaseAgent):
         # Use a semaphore to limit concurrency
         sem = asyncio.Semaphore(MAX_CONCURRENT)
 
-        async def analyze_one(candidate: ProductCandidate) -> tuple[str, TrustScore]:
+        async def analyze_one(candidate: ProductCandidate, idx: int) -> tuple[str, TrustScore]:
+            # Stagger requests to avoid Perplexity 429s (price agent runs in parallel)
+            await asyncio.sleep(idx * 0.3)
             async with sem:
                 return await self._analyze_candidate(candidate)
 
         try:
             results = await asyncio.gather(
-                *[analyze_one(c) for c in candidates],
+                *[analyze_one(c, i) for i, c in enumerate(candidates)],
                 return_exceptions=True,
             )
         except Exception as e:
