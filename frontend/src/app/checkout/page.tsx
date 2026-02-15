@@ -45,7 +45,7 @@ export default function CheckoutPage() {
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <ShoppingBag className="h-5 w-5 text-emerald-600" />
               <span className="text-lg font-semibold tracking-tight text-gray-900">
-                Shop<span className="text-emerald-600">Agent</span>
+                Vetted
               </span>
             </Link>
             <div className="flex items-center gap-1 ml-auto text-xs text-gray-400">
@@ -66,7 +66,7 @@ export default function CheckoutPage() {
           <p className="text-sm text-gray-400 mb-2">Order #SA-{Math.random().toString(36).slice(2, 8).toUpperCase()}</p>
           {totalSavings > 0 && (
             <p className="text-sm font-semibold text-emerald-600 mb-8">
-              You saved ${totalSavings.toFixed(2)} with ShopAgent!
+              You saved ${totalSavings.toFixed(2)} with Vetted!
             </p>
           )}
           <Link href="/" onClick={() => clearCart()}>
@@ -88,7 +88,7 @@ export default function CheckoutPage() {
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <ShoppingBag className="h-5 w-5 text-emerald-600" />
               <span className="text-lg font-semibold tracking-tight text-gray-900">
-                Shop<span className="text-emerald-600">Agent</span>
+                Vetted
               </span>
             </Link>
           </div>
@@ -117,7 +117,7 @@ export default function CheckoutPage() {
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <ShoppingBag className="h-5 w-5 text-emerald-600" />
               <span className="text-lg font-semibold tracking-tight text-gray-900">
-                Shop<span className="text-emerald-600">Agent</span>
+                Vetted
               </span>
             </Link>
             <span className="text-gray-300">|</span>
@@ -321,7 +321,7 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-sm">
                     <span className="flex items-center gap-1 text-emerald-600 font-medium">
                       <Tag className="h-3 w-3" />
-                      ShopAgent Savings
+                      Vetted Savings
                     </span>
                     <span className="text-emerald-600 font-medium">-${totalSavings.toFixed(2)}</span>
                   </div>
@@ -342,7 +342,7 @@ export default function CheckoutPage() {
               </Button>
 
               <p className="text-[10px] text-gray-400 text-center mt-3 leading-relaxed">
-                By placing your order, you agree to ShopAgent&apos;s Terms of Service.
+                By placing your order, you agree to Vetted&apos;s Terms of Service.
                 This is a demo — no real charges will be made.
               </p>
             </div>

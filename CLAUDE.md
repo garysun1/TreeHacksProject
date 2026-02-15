@@ -1,9 +1,9 @@
-# ShopAgent — Multi-Agent AI Shopping Assistant
+# Vetted — Multi-Agent AI Shopping Assistant
 
 > TreeHacks 2026 hackathon project
 
 ## Purpose
-ShopAgent helps users go from a vague shopping intent to the best possible purchase by orchestrating 5 specialized AI agents in a pipeline.
+Vetted helps users go from a vague shopping intent to the best possible purchase by orchestrating 5 specialized AI agents in a pipeline.
 
 ## Architecture
 Five agents orchestrated by a LangGraph StateGraph:

@@ -104,7 +104,7 @@ export function Header({
         >
           <ShoppingBag className="h-5 w-5 text-emerald-600" />
           <h1 className="text-lg font-semibold tracking-tight text-gray-900">
-            Shop<span className="text-emerald-600">Agent</span>
+            Vetted
           </h1>
         </button>
 

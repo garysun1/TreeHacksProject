@@ -1,1 +1,1 @@
-"""LangGraph orchestrator for the ShopAgent pipeline."""
+"""LangGraph orchestrator for the Vetted pipeline."""

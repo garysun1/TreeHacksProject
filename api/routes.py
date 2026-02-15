@@ -1,4 +1,4 @@
-"""FastAPI REST endpoints for the ShopAgent API."""
+"""FastAPI REST endpoints for the Vetted API."""
 
 import logging
 import re
@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from agents.negotiation_agent import NegotiationAgent
 from models.requirements import ProductRequirements
 from orchestrator.pipeline import pipeline
 
@@ -180,4 +181,127 @@ async def get_candidates(session_id: str) -> dict[str, Any]:
         "negotiation_results": {
             k: v.model_dump(mode="json") for k, v in state.negotiation_results.items()
         },
+    }
+
+
+# ── On-demand negotiation & savings endpoints ────────────────────────
+
+# Reuse the singleton from nodes.py so we share the OpenAI client
+from orchestrator.nodes import _negotiation_agent
+
+
+@router.post("/sessions/{session_id}/negotiate/{candidate_id}")
+async def negotiate_candidate(session_id: str, candidate_id: str) -> dict[str, Any]:
+    """Run the negotiation agent for a single candidate on-demand.
+
+    Only makes sense for marketplace listings (facebook_marketplace, craigslist,
+    etc.). For retail platforms the price agent data already has coupons/cashback
+    — use the /savings/ endpoint instead.
+    """
+    state = pipeline.get_session(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Find the candidate in ranked results
+    candidate = None
+    for rc in state.ranked_candidates:
+        if rc.candidate.id == candidate_id:
+            candidate = rc.candidate
+            break
+
+    # Fall back to raw candidates list
+    if candidate is None:
+        for c in state.candidates:
+            if c.id == candidate_id:
+                candidate = c
+                break
+
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="Candidate not found")
+
+    trust_score = state.trust_scores.get(candidate_id)
+    price_analysis = state.price_analyses.get(candidate_id)
+
+    result = await _negotiation_agent.negotiate_single(
+        candidate, trust_score, price_analysis
+    )
+
+    # Store the result in session state
+    state.negotiation_results[candidate_id] = result
+    pipeline.sessions[session_id] = state
+
+    return result.model_dump(mode="json")
+
+
+@router.get("/sessions/{session_id}/savings/{candidate_id}")
+async def get_savings_detail(session_id: str, candidate_id: str) -> dict[str, Any]:
+    """Get detailed savings breakdown for a candidate.
+
+    Surfaces the price agent's existing data in a more actionable format.
+    No new agent call needed — just reformats existing PriceAnalysis data.
+    """
+    state = pipeline.get_session(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    price_analysis = state.price_analyses.get(candidate_id)
+    if price_analysis is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Price analysis not found for this candidate",
+        )
+
+    cheapest_competitor = None
+    if price_analysis.competitor_prices:
+        cheapest = min(price_analysis.competitor_prices, key=lambda x: x.price)
+        cheapest_competitor = {
+            "platform": cheapest.platform,
+            "price": cheapest.price,
+            "url": cheapest.url,
+            "in_stock": cheapest.in_stock,
+        }
+
+    return {
+        "candidate_id": candidate_id,
+        "current_price": price_analysis.current_price,
+        "effective_price": price_analysis.effective_price,
+        "total_savings": price_analysis.total_savings_potential,
+        "coupons": [
+            {
+                "code": c.code,
+                "description": c.description,
+                "discount": c.discount_amount or c.discount_percent,
+                "verified": c.verified,
+            }
+            for c in price_analysis.available_coupons
+        ],
+        "cashback": [
+            {
+                "provider": cb.provider,
+                "percent": cb.cashback_percent,
+                "url": cb.url,
+            }
+            for cb in price_analysis.cashback_options
+        ],
+        "competitor_prices": [
+            {
+                "platform": cp.platform,
+                "price": cp.price,
+                "url": cp.url,
+                "in_stock": cp.in_stock,
+            }
+            for cp in price_analysis.competitor_prices
+        ],
+        "price_match_eligible": any(
+            cp.price < price_analysis.current_price and cp.in_stock
+            for cp in price_analysis.competitor_prices
+        ),
+        "cheapest_competitor": cheapest_competitor,
+        "price_history": {
+            "lowest": price_analysis.price_history.lowest_price if price_analysis.price_history else None,
+            "average": price_analysis.price_history.average_price if price_analysis.price_history else None,
+            "trend": price_analysis.price_history.price_trend if price_analysis.price_history else None,
+        },
+        "price_prediction": price_analysis.price_prediction,
+        "deal_quality_score": price_analysis.deal_quality_score,
     }

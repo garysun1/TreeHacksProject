@@ -1,4 +1,9 @@
-"""LangGraph node wrapper functions that call each agent's run() method."""
+"""LangGraph node wrapper functions that call each agent's run() method.
+
+The graph uses 4 nodes: intent, search, analyze (trust+price parallel), rank.
+Negotiation is handled on-demand outside the graph via negotiate_node / the
+NegotiationAgent directly.
+"""
 
 import asyncio
 import logging
@@ -53,11 +58,15 @@ async def analyze_node(state: SharedState) -> dict[str, Any]:
 
 
 async def rank_candidates_node(state: SharedState) -> dict[str, Any]:
-    """Node: rank candidates using trust + price analysis."""
+    """Node: rank candidates using trust + price analysis.
+
+    This is the final node in the automatic pipeline. Status is set to
+    'complete' — negotiation is now on-demand via a separate endpoint.
+    """
     ranked = rank_candidates(state)
     return {
         "ranked_candidates": ranked,
-        "status": "negotiating" if state.enable_negotiation else "complete",
+        "status": "complete",
         "updated_at": datetime.now(timezone.utc),
     }
 

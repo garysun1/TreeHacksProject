@@ -1,4 +1,4 @@
-"""Base agent class with common interface for all ShopAgent agents."""
+"""Base agent class with common interface for all Vetted agents."""
 
 import abc
 import logging

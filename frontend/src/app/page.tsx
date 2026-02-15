@@ -10,15 +10,16 @@ import { PipelineTracker } from "@/components/PipelineTracker";
 import { SmartFilters } from "@/components/SmartFilters";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ProductDetailPanel } from "@/components/ProductDetailPanel";
+import { NegotiatePanel } from "@/components/NegotiatePanel";
+import { SavingsPanel } from "@/components/SavingsPanel";
 import { AgentActivityIndicator } from "@/components/AgentActivityIndicator";
-import { AppState, Filters, PipelineStage, Product } from "@/lib/types";
+import { AppState, Filters, PipelineStage, Product, NegotiateResponse, SavingsResponse } from "@/lib/types";
 import { defaultPipelineStages, defaultFilters } from "@/lib/mock-data";
-import { createSession, sendMessage, triggerSearch, getSessionState, simulatePipeline } from "@/lib/api";
+import { createSession, sendMessage, triggerSearch, getSessionState, simulatePipeline, negotiateCandidate, getSavingsDetail } from "@/lib/api";
 
 // ── Named constants ──────────────────────────────────────────────────
 const STAGE_SEARCH_DELAY_MS = 5_000;
 const STAGE_ANALYZE_DELAY_MS = 12_000;
-const STAGE_NEGOTIATE_DELAY_MS = 20_000;
 const POLL_INTERVAL_MS = 2_000;
 const POLL_SAFETY_TIMEOUT_MS = 60_000;
 
@@ -117,6 +118,23 @@ export default function Home() {
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
+
+  // ── Negotiate panel state ─────────────────────────────────────────
+  const [negotiateOpen, setNegotiateOpen] = useState(false);
+  const [negotiateData, setNegotiateData] = useState<NegotiateResponse | null>(null);
+  const [negotiateLoading, setNegotiateLoading] = useState(false);
+  const [negotiateError, setNegotiateError] = useState(false);
+  const [negotiateProduct, setNegotiateProduct] = useState<Product | null>(null);
+  const [negotiateLoadingId, setNegotiateLoadingId] = useState<string | null>(null);
+
+  // ── Savings panel state ───────────────────────────────────────────
+  const [savingsOpen, setSavingsOpen] = useState(false);
+  const [savingsData, setSavingsData] = useState<SavingsResponse | null>(null);
+  const [savingsLoading, setSavingsLoading] = useState(false);
+  const [savingsError, setSavingsError] = useState(false);
+  const [savingsProduct, setSavingsProduct] = useState<Product | null>(null);
+  const [savingsLoadingId, setSavingsLoadingId] = useState<string | null>(null);
 
   const handleSearch = useCallback(async (query: string) => {
     // Cancel any in-flight search
@@ -127,11 +145,13 @@ export default function Home() {
 
     dispatch({ type: "SEARCH_START", query });
     setDataSource(null);
+    sessionIdRef.current = null;
 
     const sessionId = await createSession(query);
     if (signal.aborted) return;
 
     if (sessionId) {
+      sessionIdRef.current = sessionId;
       setDataSource("live");
 
       // Show intent stage as active while session initializes
@@ -147,30 +167,23 @@ export default function Home() {
       dispatch({ type: "PIPELINE_UPDATE", stages: [...stagesRef] });
 
       // triggerSearch blocks until the ENTIRE pipeline completes on the backend.
-      // Show estimated intermediate progress while waiting.
+      // Show estimated intermediate progress while waiting (4-stage pipeline).
       const searchTimer = setTimeout(() => {
         if (signal.aborted) return;
         stagesRef[1] = { ...stagesRef[1], status: "complete", statusText: "Products found" };
-        stagesRef[2] = { ...stagesRef[2], status: "active", statusText: "Verifying sellers..." };
+        stagesRef[2] = { ...stagesRef[2], status: "active", statusText: "Analyzing trust & prices..." };
         dispatch({ type: "PIPELINE_UPDATE", stages: [...stagesRef] });
       }, STAGE_SEARCH_DELAY_MS);
       const analyzeTimer = setTimeout(() => {
         if (signal.aborted) return;
-        stagesRef[2] = { ...stagesRef[2], status: "complete", statusText: "Trust analysis complete" };
-        stagesRef[3] = { ...stagesRef[3], status: "active", statusText: "Analyzing prices..." };
+        stagesRef[2] = { ...stagesRef[2], status: "complete", statusText: "Analysis complete" };
+        stagesRef[3] = { ...stagesRef[3], status: "active", statusText: "Ranking results..." };
         dispatch({ type: "PIPELINE_UPDATE", stages: [...stagesRef] });
       }, STAGE_ANALYZE_DELAY_MS);
-      const negotiateTimer = setTimeout(() => {
-        if (signal.aborted) return;
-        stagesRef[3] = { ...stagesRef[3], status: "complete", statusText: "Price analysis complete" };
-        stagesRef[4] = { ...stagesRef[4], status: "active", statusText: "Generating strategies..." };
-        dispatch({ type: "PIPELINE_UPDATE", stages: [...stagesRef] });
-      }, STAGE_NEGOTIATE_DELAY_MS);
 
       const searchOk = await triggerSearch(sessionId, signal);
       clearTimeout(searchTimer);
       clearTimeout(analyzeTimer);
-      clearTimeout(negotiateTimer);
       if (signal.aborted) return;
 
       if (searchOk) {
@@ -248,9 +261,60 @@ export default function Home() {
     // Abort any in-flight API calls and timers
     abortRef.current?.abort();
     abortRef.current = null;
+    sessionIdRef.current = null;
     dispatch({ type: "RESET" });
     setDataSource(null);
   }, []);
+
+  // ── On-demand negotiate handler ───────────────────────────────────
+  const handleNegotiate = useCallback(async (product: Product) => {
+    setNegotiateProduct(product);
+    setNegotiateData(null);
+    setNegotiateError(false);
+    setNegotiateLoading(true);
+    setNegotiateLoadingId(product.id);
+    setNegotiateOpen(true);
+
+    try {
+      const sid = sessionIdRef.current ?? "demo";
+      const data = await negotiateCandidate(sid, product.id);
+      setNegotiateData(data);
+    } catch {
+      setNegotiateError(true);
+    } finally {
+      setNegotiateLoading(false);
+      setNegotiateLoadingId(null);
+    }
+  }, []);
+
+  const handleNegotiateRetry = useCallback(() => {
+    if (negotiateProduct) handleNegotiate(negotiateProduct);
+  }, [negotiateProduct, handleNegotiate]);
+
+  // ── On-demand savings handler ─────────────────────────────────────
+  const handleFindSavings = useCallback(async (product: Product) => {
+    setSavingsProduct(product);
+    setSavingsData(null);
+    setSavingsError(false);
+    setSavingsLoading(true);
+    setSavingsLoadingId(product.id);
+    setSavingsOpen(true);
+
+    try {
+      const sid = sessionIdRef.current ?? "demo";
+      const data = await getSavingsDetail(sid, product.id);
+      setSavingsData(data);
+    } catch {
+      setSavingsError(true);
+    } finally {
+      setSavingsLoading(false);
+      setSavingsLoadingId(null);
+    }
+  }, []);
+
+  const handleSavingsRetry = useCallback(() => {
+    if (savingsProduct) handleFindSavings(savingsProduct);
+  }, [savingsProduct, handleFindSavings]);
 
   const filteredProducts = state.candidates.filter((p) => {
     if (p.price.effectivePrice > state.filters.budgetRange[1]) return false;
@@ -366,6 +430,10 @@ export default function Home() {
                 products={filteredProducts}
                 isLoading={state.isSearching && state.candidates.length === 0}
                 onViewDetails={handleViewDetails}
+                onNegotiate={handleNegotiate}
+                onFindSavings={handleFindSavings}
+                negotiateLoadingId={negotiateLoadingId}
+                savingsLoadingId={savingsLoadingId}
               />
             </div>
           </div>
@@ -376,6 +444,28 @@ export default function Home() {
         product={state.selectedProduct}
         open={state.isDetailOpen}
         onClose={handleCloseDetail}
+      />
+
+      <NegotiatePanel
+        open={negotiateOpen}
+        onClose={() => setNegotiateOpen(false)}
+        data={negotiateData}
+        loading={negotiateLoading}
+        error={negotiateError}
+        productName={negotiateProduct?.name ?? ""}
+        platform={negotiateProduct?.platform ?? ""}
+        onRetry={handleNegotiateRetry}
+      />
+
+      <SavingsPanel
+        open={savingsOpen}
+        onClose={() => setSavingsOpen(false)}
+        data={savingsData}
+        loading={savingsLoading}
+        error={savingsError}
+        productName={savingsProduct?.name ?? ""}
+        platform={savingsProduct?.platform ?? ""}
+        onRetry={handleSavingsRetry}
       />
 
       <AgentActivityIndicator stages={state.pipelineStages} />

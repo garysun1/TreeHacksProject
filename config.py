@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """Central configuration for ShopAgent."""
+    """Central configuration for Vetted."""
 
     # Required API keys
     anthropic_api_key: str = ""

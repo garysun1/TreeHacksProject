@@ -1,4 +1,4 @@
-"""FastAPI application entry point for ShopAgent."""
+"""FastAPI application entry point for Vetted."""
 
 import logging
 
@@ -18,7 +18,7 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="ShopAgent",
+    title="Vetted",
     description="Multi-agent AI shopping assistant — TreeHacks 2026",
     version="0.1.0",
 )
@@ -38,4 +38,4 @@ app.include_router(ws_router)
 @app.get("/health")
 async def health() -> dict[str, str]:
     """Health check endpoint."""
-    return {"status": "ok", "service": "shopagent"}
+    return {"status": "ok", "service": "vetted"}

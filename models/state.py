@@ -45,13 +45,15 @@ def _merge_dict(left: dict, right: dict) -> dict:
 
 
 class SharedState(BaseModel):
-    """Central state object for the ShopAgent pipeline.
+    """Central state object for the Vetted pipeline.
 
     Used as the LangGraph StateGraph schema. Fields use Annotated reducers
     so that node returns are merged properly.
     """
 
     session_id: str = ""
+    # "negotiating" is not part of the automatic pipeline flow — it's set
+    # only when an on-demand negotiation request is in progress.
     status: Literal[
         "intent", "searching", "analyzing", "negotiating", "complete", "error"
     ] = "intent"

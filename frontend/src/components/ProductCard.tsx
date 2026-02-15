@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Star, ShieldCheck, ShieldAlert, ShieldX, ShoppingCart, Check } from "lucide-react";
+import { Star, ShieldCheck, ShieldAlert, ShieldX, ShoppingCart, Check, MessageSquare, Tag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Product } from "@/lib/types";
@@ -17,9 +17,17 @@ const platformColors: Record<string, string> = {
   Craigslist: "bg-violet-100 text-violet-800",
 };
 
+// Platform capability sets (using display names as used in products)
+const NEGOTIABLE_PLATFORMS = new Set(["Facebook Marketplace", "Craigslist", "eBay"]);
+const SAVINGS_PLATFORMS = new Set(["Amazon", "Walmart", "Best Buy", "eBay"]);
+
 interface ProductCardProps {
   product: Product;
   onViewDetails: (product: Product) => void;
+  onNegotiate: (product: Product) => void;
+  onFindSavings: (product: Product) => void;
+  negotiateLoading?: boolean;
+  savingsLoading?: boolean;
   index: number;
 }
 
@@ -29,12 +37,15 @@ function TrustIcon({ score }: { score: number }) {
   return <ShieldX className="h-3.5 w-3.5 text-red-500" />;
 }
 
-export function ProductCard({ product, onViewDetails }: ProductCardProps) {
+export function ProductCard({ product, onViewDetails, onNegotiate, onFindSavings, negotiateLoading, savingsLoading }: ProductCardProps) {
   const { trust, price } = product;
   const savingsPercent = Math.round(((price.originalPrice - price.effectivePrice) / price.originalPrice) * 100);
   const { addToCart, isInCart } = useCart();
   const inCart = isInCart(product.id);
   const [showToast, setShowToast] = useState(false);
+
+  const canNegotiate = NEGOTIABLE_PLATFORMS.has(product.platform);
+  const canSavings = SAVINGS_PLATFORMS.has(product.platform);
 
   useEffect(() => {
     if (showToast) {
@@ -142,7 +153,7 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
           </span>
         </div>
 
-        {/* CTA */}
+        {/* CTA row: View Deal + Cart */}
         <div className="flex gap-2 mt-1 relative">
           <Button
             size="sm"
@@ -165,6 +176,61 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
               Added to cart
             </div>
           )}
+        </div>
+
+        {/* Action buttons: Negotiate + Find Savings */}
+        <div className="flex gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`w-full h-8 text-xs gap-1.5 ${
+                    canNegotiate
+                      ? "border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400"
+                      : "opacity-50 cursor-not-allowed border-gray-200 text-gray-400"
+                  }`}
+                  disabled={!canNegotiate || negotiateLoading}
+                  onClick={(e) => { e.stopPropagation(); onNegotiate(product); }}
+                >
+                  {negotiateLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+                  Negotiate
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+              {canNegotiate
+                ? "Generate negotiation messages for this listing"
+                : "Negotiation isn't available on fixed-price platforms"}
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`w-full h-8 text-xs gap-1.5 ${
+                    canSavings
+                      ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400"
+                      : "opacity-50 cursor-not-allowed border-gray-200 text-gray-400"
+                  }`}
+                  disabled={!canSavings || savingsLoading}
+                  onClick={(e) => { e.stopPropagation(); onFindSavings(product); }}
+                >
+                  {savingsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Tag className="h-3 w-3" />}
+                  Find Savings
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="text-xs max-w-[200px]">
+              {canSavings
+                ? "Find coupons, cashback, and price-match opportunities"
+                : "Coupons and cashback aren't available for marketplace listings"}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
-import { Product, PipelineStage, Filters } from "./types";
-import { mockProducts, defaultPipelineStages, mockFiltersForCamera, defaultFilters } from "./mock-data";
+import { Product, PipelineStage, Filters, NegotiateResponse, SavingsResponse } from "./types";
+import { mockProducts, defaultPipelineStages, mockFiltersForCamera, defaultFilters, mockNegotiateResponse, mockSavingsResponse } from "./mock-data";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -167,9 +167,9 @@ function transformSessionState(data: any): {
     transformRankedCandidate(rc, negotiationResults)
   );
 
-  // Build pipeline from status
+  // Build pipeline from status (4-stage pipeline: intent → search → analyze → results)
   const status = data.status ?? "intent";
-  const statusOrder = ["intent", "searching", "analyzing", "negotiating", "complete"];
+  const statusOrder = ["intent", "searching", "analyzing", "complete"];
   const statusIdx = statusOrder.indexOf(status);
 
   const pipeline = defaultPipelineStages.map((stage, i) => {
@@ -307,6 +307,41 @@ export function connectWebSocket(
   }
 }
 
+// ── On-demand endpoints ──────────────────────────────────────────────
+
+export async function negotiateCandidate(
+  sessionId: string,
+  candidateId: string
+): Promise<NegotiateResponse> {
+  try {
+    const res = await fetch(
+      `${API_URL}/api/sessions/${sessionId}/negotiate/${candidateId}`,
+      { method: "POST" }
+    );
+    if (!res.ok) throw new Error(`Negotiate failed: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Negotiate endpoint unavailable, using mock:", err);
+    return { ...mockNegotiateResponse, candidate_id: candidateId };
+  }
+}
+
+export async function getSavingsDetail(
+  sessionId: string,
+  candidateId: string
+): Promise<SavingsResponse> {
+  try {
+    const res = await fetch(
+      `${API_URL}/api/sessions/${sessionId}/savings/${candidateId}`
+    );
+    if (!res.ok) throw new Error(`Savings failed: ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Savings endpoint unavailable, using mock:", err);
+    return { ...mockSavingsResponse, candidate_id: candidateId };
+  }
+}
+
 // Simulates the full pipeline with mock data for demo purposes.
 // Now query-aware: the stage text reflects the actual user query,
 // and the mock products are filtered to avoid confusion.
@@ -324,9 +359,8 @@ export function simulatePipeline(
   const delays = [
     { index: 0, delay: 500, activeText: "Understanding your query...", completeText: `Query parsed: "${short}"` },
     { index: 1, delay: 2000, activeText: "Searching 6 platforms...", completeText: `Found ${mockProducts.length} demo results` },
-    { index: 2, delay: 3500, activeText: "Verifying sellers...", completeText: "Trust analysis complete" },
-    { index: 3, delay: 5000, activeText: "Analyzing prices & deals...", completeText: "Price analysis complete" },
-    { index: 4, delay: 6500, activeText: "Generating strategies...", completeText: "Negotiation analysis complete" },
+    { index: 2, delay: 3500, activeText: "Analyzing trust & prices...", completeText: "Analysis complete" },
+    { index: 3, delay: 5500, activeText: "Ranking results...", completeText: "Results ready" },
   ];
 
   delays.forEach(({ index, delay, activeText, completeText }) => {

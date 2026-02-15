@@ -27,7 +27,8 @@ class PipelineRunner:
 
         Args:
             user_query: Initial user message.
-            enable_negotiation: Whether to run the negotiation agent.
+            enable_negotiation: Kept for API compatibility. Negotiation is now
+                on-demand and no longer part of the automatic pipeline.
 
         Returns:
             Session ID string.

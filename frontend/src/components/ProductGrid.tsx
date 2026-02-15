@@ -7,6 +7,10 @@ interface ProductGridProps {
   products: Product[];
   isLoading: boolean;
   onViewDetails: (product: Product) => void;
+  onNegotiate: (product: Product) => void;
+  onFindSavings: (product: Product) => void;
+  negotiateLoadingId?: string | null;
+  savingsLoadingId?: string | null;
 }
 
 function SkeletonCard() {
@@ -25,7 +29,7 @@ function SkeletonCard() {
   );
 }
 
-export function ProductGrid({ products, isLoading, onViewDetails }: ProductGridProps) {
+export function ProductGrid({ products, isLoading, onViewDetails, onNegotiate, onFindSavings, negotiateLoadingId, savingsLoadingId }: ProductGridProps) {
   if (isLoading && products.length === 0) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -43,6 +47,10 @@ export function ProductGrid({ products, isLoading, onViewDetails }: ProductGridP
           key={product.id}
           product={product}
           onViewDetails={onViewDetails}
+          onNegotiate={onNegotiate}
+          onFindSavings={onFindSavings}
+          negotiateLoading={negotiateLoadingId === product.id}
+          savingsLoading={savingsLoadingId === product.id}
           index={index}
         />
       ))}

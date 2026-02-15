@@ -1,4 +1,4 @@
-"""AI agents for the ShopAgent pipeline."""
+"""AI agents for the Vetted pipeline."""
 
 from agents.base import BaseAgent
 from agents.intent_agent import IntentAgent

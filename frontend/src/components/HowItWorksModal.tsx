@@ -33,10 +33,10 @@ const STEPS = [
   },
   {
     icon: MessageSquare,
-    label: "Negotiate",
+    label: "Save",
     color: "text-purple-600",
     bg: "bg-purple-50",
-    description: "Get ready-to-send messages for price matches and offers",
+    description: "On-demand negotiation messages and savings — coupons, cashback, price match",
   },
 ];
 
@@ -58,7 +58,7 @@ export function HowItWorksModal({ open, onClose }: HowItWorksModalProps) {
       <DialogContent className="sm:max-w-[680px]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-gray-900">
-            How ShopAgent Works
+            How Vetted Works
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-500">
             Four specialized agents work together to find you the best deal

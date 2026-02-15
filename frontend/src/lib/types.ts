@@ -89,6 +89,61 @@ export interface Product {
   };
 }
 
+// ── On-demand API response types ──────────────────────────────────
+
+export interface NegotiateResponse {
+  candidate_id: string;
+  strategy_used: string;
+  original_price: number;
+  negotiated_price: number | null;
+  savings: number | null;
+  success: boolean;
+  reasoning: string;
+  conversation_log: { role: string; content: string }[];
+  next_steps: string[];
+}
+
+export interface SavingsCoupon {
+  code: string;
+  description: string;
+  discount: number | null;
+  verified: boolean;
+}
+
+export interface SavingsCashback {
+  provider: string;
+  percent: number;
+  url: string;
+}
+
+export interface SavingsCompetitor {
+  platform: string;
+  price: number;
+  url: string;
+  in_stock: boolean;
+}
+
+export interface SavingsResponse {
+  candidate_id: string;
+  current_price: number;
+  effective_price: number;
+  total_savings: number;
+  coupons: SavingsCoupon[];
+  cashback: SavingsCashback[];
+  competitor_prices: SavingsCompetitor[];
+  price_match_eligible: boolean;
+  cheapest_competitor: SavingsCompetitor | null;
+  price_history: {
+    lowest: number | null;
+    average: number | null;
+    trend: "rising" | "falling" | "stable" | "volatile" | null;
+  };
+  price_prediction: string | null;
+  deal_quality_score: number;
+}
+
+// ── Filter / App types ────────────────────────────────────────────
+
 export interface Filters {
   budgetRange: [number, number];
   brands: string[];

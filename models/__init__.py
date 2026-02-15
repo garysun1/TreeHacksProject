@@ -1,4 +1,4 @@
-"""Pydantic v2 data models for ShopAgent pipeline."""
+"""Pydantic v2 data models for Vetted pipeline."""
 
 from models.requirements import ProductRequirements
 from models.candidates import ProductCandidate

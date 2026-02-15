@@ -1,4 +1,4 @@
-"""End-to-end test — runs the full ShopAgent pipeline from intent through negotiation."""
+"""End-to-end test — runs the full Vetted pipeline from intent through negotiation."""
 
 import asyncio
 import logging
@@ -90,7 +90,7 @@ async def main() -> None:
 
     # ── API key status ──────────────────────────────────────────────────
     print(f"\n{SEPARATOR}")
-    print("  ShopAgent End-to-End Pipeline Test")
+    print("  Vetted End-to-End Pipeline Test")
     print(SEPARATOR)
     api = _api_status()
     print("\nAPI key status:")

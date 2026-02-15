@@ -6,17 +6,24 @@ from orchestrator.graph import (
     build_graph,
     compile_graph,
     should_continue_intent,
-    should_negotiate,
 )
 
 
 def test_graph_builds():
+    """Graph should have 4 nodes: intent, search, analyze, rank."""
     graph = build_graph()
     assert "intent" in graph.nodes
     assert "search" in graph.nodes
     assert "analyze" in graph.nodes
     assert "rank" in graph.nodes
-    assert "negotiate" in graph.nodes
+    # negotiate is no longer an automatic pipeline node
+    assert "negotiate" not in graph.nodes
+
+
+def test_graph_has_four_nodes():
+    """Verify exactly 4 nodes in the graph."""
+    graph = build_graph()
+    assert len(graph.nodes) == 4
 
 
 def test_graph_compiles():
@@ -47,21 +54,3 @@ def test_should_continue_intent_done():
         ),
     )
     assert should_continue_intent(state) == "done"
-
-
-def test_should_negotiate_enabled():
-    state = SharedState(
-        session_id="test",
-        user_query="camera",
-        enable_negotiation=True,
-    )
-    assert should_negotiate(state) == "negotiate"
-
-
-def test_should_negotiate_disabled():
-    state = SharedState(
-        session_id="test",
-        user_query="camera",
-        enable_negotiation=False,
-    )
-    assert should_negotiate(state) == "skip"

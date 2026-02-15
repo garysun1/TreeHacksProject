@@ -1,11 +1,10 @@
-import { Product, PipelineStage, Filters } from "./types";
+import { Product, PipelineStage, Filters, NegotiateResponse, SavingsResponse } from "./types";
 
 export const defaultPipelineStages: PipelineStage[] = [
   { id: "intent", name: "Intent", icon: "brain", status: "pending", statusText: "" },
   { id: "search", name: "Search", icon: "search", status: "pending", statusText: "" },
-  { id: "trust", name: "Trust", icon: "shield", status: "pending", statusText: "" },
-  { id: "price", name: "Price", icon: "dollar", status: "pending", statusText: "" },
-  { id: "negotiate", name: "Negotiate", icon: "handshake", status: "pending", statusText: "" },
+  { id: "analyze", name: "Analyze", icon: "shield-dollar", status: "pending", statusText: "" },
+  { id: "results", name: "Results", icon: "check", status: "pending", statusText: "" },
 ];
 
 export const defaultFilters: Filters = {
@@ -783,4 +782,70 @@ export const mockFiltersForCamera: Filters = {
   niceToHaveFeatures: ["Weather Sealed", "In-Body Stabilization", "Tilting Screen"],
   platforms: ["Amazon", "eBay", "Walmart", "Best Buy", "Facebook Marketplace", "Craigslist"],
   sort: "relevance",
+};
+
+// ── Mock on-demand responses (used when backend is unavailable) ──────
+
+export const mockNegotiateResponse: NegotiateResponse = {
+  candidate_id: "mock-cl-001",
+  strategy_used: "direct_negotiation",
+  original_price: 450,
+  negotiated_price: 375,
+  savings: 75,
+  success: true,
+  reasoning:
+    "This Craigslist listing has been up for 12 days with no buyer activity. The seller may be motivated. Amazon sells this camera new for $449, giving you strong leverage to negotiate on a used unit.",
+  conversation_log: [
+    {
+      role: "buyer_aggressive",
+      content:
+        "Hi, I'm interested in the camera. I've seen this model go for around $350-380 used in similar condition. Amazon has it new for $449 right now. Would you consider $350? I can pick up today.",
+    },
+    {
+      role: "buyer_moderate",
+      content:
+        "Hey, love the camera listing! I noticed Amazon has this new for $449. Since yours is used, would you be open to $375? I'm ready to pick up whenever works for you.",
+    },
+    {
+      role: "buyer_friendly",
+      content:
+        "Hi there! Really interested in your camera. I've been shopping around and wanted to see if there's any flexibility on the price? I was thinking around $400 — happy to come pick it up at your convenience!",
+    },
+  ],
+  next_steps: [
+    "Send the moderate message first — it balances assertiveness with friendliness",
+    "If the seller counters above $400, suggest meeting at $385",
+    "Walk-away price: $420 — above this, buy new from Amazon for $449 with warranty",
+    "Bring cash — sellers are more likely to accept lower offers for immediate cash payment",
+  ],
+};
+
+export const mockSavingsResponse: SavingsResponse = {
+  candidate_id: "mock-amz-001",
+  current_price: 278,
+  effective_price: 239.5,
+  total_savings: 38.5,
+  deal_quality_score: 82,
+  coupons: [
+    { code: "AUDIO15", description: "15% off select audio products", discount: 15, verified: true },
+    { code: "SAVE10NOW", description: "$10 off orders over $200", discount: 10, verified: false },
+  ],
+  cashback: [
+    { provider: "Rakuten", percent: 5, url: "https://www.rakuten.com/amazon.com" },
+    { provider: "TopCashback", percent: 3.5, url: "https://www.topcashback.com/amazon" },
+  ],
+  competitor_prices: [
+    { platform: "Amazon", price: 278, url: "https://amazon.com/...", in_stock: true },
+    { platform: "Best Buy", price: 299, url: "https://bestbuy.com/...", in_stock: true },
+    { platform: "B&H Photo", price: 268, url: "https://bhphoto.com/...", in_stock: true },
+    { platform: "Walmart", price: 289, url: "https://walmart.com/...", in_stock: false },
+  ],
+  price_match_eligible: true,
+  cheapest_competitor: { platform: "B&H Photo", price: 268, url: "https://bhphoto.com/...", in_stock: true },
+  price_history: {
+    lowest: 229,
+    average: 305,
+    trend: "falling",
+  },
+  price_prediction: "Price has been dropping since January. May reach $250 range by March sales events.",
 };

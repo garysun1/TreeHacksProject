@@ -1,4 +1,4 @@
-"""LangGraph StateGraph definition for the ShopAgent pipeline."""
+"""LangGraph StateGraph definition for the Vetted pipeline."""
 
 import logging
 from typing import Literal
@@ -10,7 +10,6 @@ from models.state import SharedState
 from orchestrator.nodes import (
     analyze_node,
     intent_node,
-    negotiate_node,
     rank_candidates_node,
     search_node,
 )
@@ -28,35 +27,29 @@ def should_continue_intent(state: SharedState) -> Literal["continue", "done"]:
     return "continue"
 
 
-def should_negotiate(state: SharedState) -> Literal["negotiate", "skip"]:
-    """Route after ranking: negotiate if enabled, otherwise skip to end."""
-    if state.enable_negotiation:
-        return "negotiate"
-    return "skip"
-
-
 def build_graph() -> StateGraph:
-    """Construct the ShopAgent pipeline graph.
+    """Construct the Vetted pipeline graph.
 
-    Graph structure:
+    Graph structure (4 nodes):
         START -> intent (loops until requirements finalized)
               -> search
               -> analyze (trust + price in parallel)
               -> rank
-              -> negotiate (conditional) -> END
-              -> END (if negotiation skipped)
+              -> END
+
+    Negotiation is handled on-demand via a separate API endpoint,
+    not as an automatic pipeline step.
 
     Returns:
         Configured StateGraph (not yet compiled).
     """
     graph = StateGraph(SharedState)
 
-    # Add nodes
+    # Add nodes (4 total: intent, search, analyze, rank)
     graph.add_node("intent", intent_node)
     graph.add_node("search", search_node)
     graph.add_node("analyze", analyze_node)
     graph.add_node("rank", rank_candidates_node)
-    graph.add_node("negotiate", negotiate_node)
 
     # Set entry point
     graph.set_entry_point("intent")
@@ -68,17 +61,10 @@ def build_graph() -> StateGraph:
         {"continue": "intent", "done": "search"},
     )
 
-    # Linear flow: search -> analyze -> rank
+    # Linear flow: search -> analyze -> rank -> END
     graph.add_edge("search", "analyze")
     graph.add_edge("analyze", "rank")
-
-    # Conditional: negotiate or skip to end
-    graph.add_conditional_edges(
-        "rank",
-        should_negotiate,
-        {"negotiate": "negotiate", "skip": END},
-    )
-    graph.add_edge("negotiate", END)
+    graph.add_edge("rank", END)
 
     return graph
 

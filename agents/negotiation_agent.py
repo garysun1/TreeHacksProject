@@ -38,6 +38,7 @@ instead of fabricating a strategy.
 NEGOTIABLE_PLATFORMS = {"ebay", "facebook", "facebook_marketplace", "craigslist", "offerup", "mercari"}
 PRICE_MATCH_PLATFORMS = {"bestbuy", "walmart", "target"}
 FIXED_PRICE_PLATFORMS = {"amazon"}
+RETAIL_PLATFORMS = PRICE_MATCH_PLATFORMS | FIXED_PRICE_PLATFORMS
 
 TOP_N_CANDIDATES = 3
 
@@ -227,6 +228,54 @@ class NegotiationAgent:
                 "status": "error",
                 "updated_at": datetime.now(timezone.utc),
             }
+
+    async def negotiate_single(
+        self,
+        candidate: ProductCandidate,
+        trust_score: TrustScore | None,
+        price_analysis: PriceAnalysis | None,
+    ) -> NegotiationResult:
+        """Run negotiation for a single candidate on-demand.
+
+        This is the public entry point for the on-demand negotiate endpoint.
+        For marketplace platforms (Facebook Marketplace, Craigslist, etc.)
+        it generates aggressive/moderate/friendly negotiation messages.
+        For retail/fixed-price platforms, it returns a non-viable result
+        directing the user to the savings feature instead.
+
+        Args:
+            candidate: The product candidate to negotiate for.
+            trust_score: Trust analysis for this candidate (may be None).
+            price_analysis: Price analysis for this candidate (may be None).
+
+        Returns:
+            A NegotiationResult with strategy, messages, and next steps.
+        """
+        platform = candidate.platform.lower()
+
+        # Retail / fixed-price platforms shouldn't use negotiation
+        if platform in RETAIL_PLATFORMS:
+            return NegotiationResult(
+                candidate_id=candidate.id,
+                strategy_used="no_negotiation",
+                original_price=candidate.price,
+                success=False,
+                reasoning=(
+                    "This product is on a fixed-price platform. "
+                    "Use the Find Savings feature instead."
+                ),
+                next_steps=[
+                    "Check available coupons and cashback via the savings endpoint",
+                    "Compare competitor prices for potential price-match",
+                ],
+            )
+
+        logger.info(
+            "On-demand negotiation for candidate %s on %s",
+            candidate.id,
+            platform,
+        )
+        return await self._negotiate_candidate(candidate, trust_score, price_analysis)
 
     async def _run(self, state: SharedState) -> dict[str, Any]:
         """Run negotiation strategies on top-ranked candidates."""
